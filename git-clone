@@ -2,25 +2,40 @@
 
 # Put this file in ~/.local/bin (I named git-clone) and make it exacutable (chmod +x git-clone)
 #
-# Usage: git-clone <git url> (in an empty directory)
+# Usage: git-clone <git url> [destination-dir]
+#   - Without destination-dir: must be run in an empty directory (current behavior).
+#   - With destination-dir: the project is checked out into that folder
+#     (created by this script; it must not already exist).
 
 REPO_URL=$1
+DEST_DIR=$2
 SCRIPT_NAME=$(basename "$0")
 
 if [ -z "$REPO_URL" ]; then
     echo "❌ Error: Missing repository URL."
-    echo "Usage: $0 <repo-url>"
+    echo "Usage: $0 <repo-url> [destination-dir]"
     exit 1
 fi
 
-# 1. Check if the current directory is empty
-# We allow the script itself to be present
-FILES_IN_DIR=$(ls -A | grep -v "$SCRIPT_NAME")
+if [ ! -z "$DEST_DIR" ]; then
+    # A destination directory was provided: create it and work inside it.
+    if [ -e "$DEST_DIR" ]; then
+        echo "❌ Error: Destination '$DEST_DIR' already exists!"
+        exit 1
+    fi
+    mkdir -p "$DEST_DIR" || exit 1
+    cd "$DEST_DIR" || exit 1
+else
+    # No destination provided: keep the original behavior and
+    # require the current directory to be empty.
+    # We allow the script itself to be present
+    FILES_IN_DIR=$(ls -A | grep -v "$SCRIPT_NAME")
 
-if [ ! -z "$FILES_IN_DIR" ]; then
-    echo "❌ Error: Current directory is not empty!"
-    echo "To keep your worktree setup clean, please run this in a fresh folder."
-    exit 1
+    if [ ! -z "$FILES_IN_DIR" ]; then
+        echo "❌ Error: Current directory is not empty!"
+        echo "To keep your worktree setup clean, please run this in a fresh folder."
+        exit 1
+    fi
 fi
 
 echo "🚀 Initializing Pro Git Worktree setup..."
